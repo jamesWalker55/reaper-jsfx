@@ -1,0 +1,9 @@
+desc: Copy (1-2) to (3-4) 
+version: 1.0
+author: James
+changelog: init
+
+@sample
+
+spl2 = spl0;
+spl3 = spl1;

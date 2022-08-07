@@ -1,0 +1,15 @@
+// This effect Copyright (C) 2004 and later Cockos Incorporated
+// License: LGPL - http://www.gnu.org/licenses/lgpl.html
+
+desc: Fucking Mute
+//tags: gain mute utility
+//author: James
+
+in_pin:left input
+in_pin:right input
+out_pin:left output
+out_pin:right output
+
+@sample
+spl0=0;
+spl1=0;

@@ -1,0 +1,29 @@
+desc:User: Stereo Shaper Clone
+//tags: utility processing stereo phase polarity gain
+//author: James
+
+slider1:lrs=0<-1.1,1.1,0.0005>Left: R Volume
+slider2:lls=0<-1.1,1.1,0.0005>Left: L Volume
+slider3:rrs=0<-1.1,1.1,0.0005>Right: R Volume
+slider4:rls=0<-1.1,1.1,0.0005>Right: L Volume
+slider5:gains=1<0,1.2,0.001>Final Gain
+
+in_pin:left input
+in_pin:right input
+out_pin:left output
+out_pin:right output
+
+@init
+k=4.7
+
+@slider
+lrv= abs(lrs)^k * abs(lrs)/lrs;
+llv= abs(lls)^k * abs(lls)/lls;
+rrv= abs(rrs)^k * abs(rrs)/rrs;
+rlv= abs(rls)^k * abs(rls)/rls;
+gain= gains^k ;
+
+@sample
+l=spl0; r=spl1;
+spl0=gain*(l*llv+r*lrv); 
+spl1=gain*(l*rlv+r*rrv);
