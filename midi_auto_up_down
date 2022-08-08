@@ -4,6 +4,7 @@ desc:MIDI Auto-up-downer
 slider1:80<0,127,1>Velocity range
 slider2:0.5<0.5,2,0.5>Cycle duration (beats)
 slider3:0.1<0,1,0.05>Offbeat detection tolerance
+slider4:1<0,1,1>Constant root note
 
 in_pin:none
 out_pin:none
@@ -59,8 +60,13 @@ i = 0;
 arrlen >= 3 ? (
   // there are at least 3 NOTE ONs
 
-  mid_pitch = (next_lowest_pitch + highest_pitch) / 2;
-  pitch_range = highest_pitch - next_lowest_pitch;
+  slider4 ? (
+    mid_pitch = (next_lowest_pitch + highest_pitch) / 2;
+    pitch_range = highest_pitch - next_lowest_pitch;
+  ) : (
+    mid_pitch = (lowest_pitch + highest_pitch) / 2;
+    pitch_range = highest_pitch - lowest_pitch;
+  );
 
   loop (arrlen,
     // retrieve midi event from memory
@@ -72,7 +78,7 @@ arrlen >= 3 ? (
     vel = msg23 >> 8;
     pitch = msg23 & 127;
 
-    pitch==lowest_pitch ? (
+    slider4 && pitch==lowest_pitch ? (
       // this is root note, pass through
       midisend(offset, msg1, msg23);
     ) : (
