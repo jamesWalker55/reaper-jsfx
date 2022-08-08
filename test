@@ -51,6 +51,8 @@ while (
         );
       );
     );
+
+    1; // Always return positive from midirecv(), otherwise the loop will end as soon as eventtype!=9
   );
 );
 
