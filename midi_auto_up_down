@@ -22,37 +22,33 @@ lowest_pitch = 129;
 next_lowest_pitch = 129;
 highest_pitch = -1;
 
-while (
-  // for each MIDI event...
-  midirecv(offset, msg1, msg23) ? (
-    eventtype = msg1 >> 4;
-    vel = (msg23/256)|0;
-    pitch = msg23&127;
+// for each MIDI event...
+while (midirecv(offset, msg1, msg23)) (
+  eventtype = msg1 >> 4;
+  vel = (msg23/256)|0;
+  pitch = msg23&127;
 
-    // if event type is NOTE ON
-    eventtype == 9 ? (
-      // store to array
-      mem[arrlen * 3] = offset;
-      mem[arrlen * 3 + 1] = msg1;
-      mem[arrlen * 3 + 2] = msg23;
-      arrlen += 1;
+  // if event type is NOTE ON
+  eventtype == 9 ? (
+    // store to array
+    mem[arrlen * 3] = offset;
+    mem[arrlen * 3 + 1] = msg1;
+    mem[arrlen * 3 + 2] = msg23;
+    arrlen += 1;
 
-      // record the pitch
-      pitch>=highest_pitch ? (
-        highest_pitch = pitch;
-      );
-      pitch<=lowest_pitch ? (
-        next_lowest_pitch = lowest_pitch;
-        lowest_pitch = pitch;
-      ) : (
-        pitch<=next_lowest_pitch ? next_lowest_pitch = pitch;
-      );
-    ) : (
-      // not NOTE ON, passthrough
-      midisend(offset, msg1, msg23);
+    // record the pitch
+    pitch>=highest_pitch ? (
+      highest_pitch = pitch;
     );
-
-    1; // Always return positive from midirecv(), otherwise the loop will end as soon as eventtype!=9
+    pitch<=lowest_pitch ? (
+      next_lowest_pitch = lowest_pitch;
+      lowest_pitch = pitch;
+    ) : (
+      pitch<=next_lowest_pitch ? next_lowest_pitch = pitch;
+    );
+  ) : (
+    // not NOTE ON, passthrough
+    midisend(offset, msg1, msg23);
   );
 );
 
