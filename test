@@ -16,9 +16,7 @@ while (
     velocity=(msg23/256)|0;
     pitch=msg23&127;
 
-    eventtype == 144 && // event type is NOTE ON
-      velocity > 0 ?
-    (
+    eventtype == 144 /* event type is NOTE ON */ && velocity > 0 ? (
       velocity = (velocity*slider1)+slider2;
       velocity|=0;
 
