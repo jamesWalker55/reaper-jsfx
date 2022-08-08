@@ -1,4 +1,4 @@
-desc:MIDI Velocity Control
+desc:MIDI Auto-up-downer
 //tags: MIDI processing
 
 slider1:30<0,127,1>Velocity range
