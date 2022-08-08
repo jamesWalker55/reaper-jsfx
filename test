@@ -1,8 +1,9 @@
 desc:MIDI Velocity Control
 //tags: MIDI processing
 
-slider1:1<-16,16,0.1>Velocity Multiply
-slider2:0<-128,128,1>Velocity Add
+slider1:30<0,127,1>Velocity range
+slider2:0.5<0.5,2,0.5>Cycle duration (beats)
+slider3:0.1<0,1,0.05>Offbeat detection tolerance
 
 in_pin:none
 out_pin:none
@@ -23,7 +24,7 @@ while (
   // for each MIDI event...
   midirecv(offset, msg1, msg23) ? (
     eventtype = msg1 >> 4;
-    velocity = (msg23/256)|0;
+    vel = (msg23/256)|0;
     pitch = msg23&127;
 
     // if event type is NOTE ON
@@ -57,7 +58,10 @@ i = 0;
 
 arrlen >= 3 ? (
   // there are at least 3 NOTE ONs
+
   mid_pitch = (next_lowest_pitch + highest_pitch) / 2;
+  pitch_range = highest_pitch - next_lowest_pitch;
+
   loop (arrlen,
     // retrieve midi event from memory
     offset = mem[i * 3];
@@ -65,17 +69,27 @@ arrlen >= 3 ? (
     msg23 = mem[i * 3 + 2];
 
     // extract information
-    velocity = msg23 >> 8;
+    vel = msg23 >> 8;
     pitch = msg23 & 127;
 
     pitch==lowest_pitch ? (
       // this is root note, pass through
       midisend(offset, msg1, msg23);
     ) : (
-      new_velocity = floor(velocity + (pitch - mid_pitch) * 8);
-      new_velocity = min(max(new_velocity, 0), 127);
+      beat_offset = beat_position - slider2 * 2 * floor(beat_position / slider2 / 2);
+      // ideally this should be:
+      //   beat_offset>=(slider2*1) && beat_offset<(slider2*2)
+      // but due to floating point errors / beat_position being imprecise...
+      // we use numbers slightly smaller than 1 and 2 to account for the impreciseness
+      is_offbeat = beat_offset>=(slider2*(1-slider3)) && beat_offset<(slider2*(2-slider3));
 
-      midisend(offset, msg1, pitch + (new_velocity << 8));
+      delta_vel = (pitch - mid_pitch) / pitch_range * slider1;
+
+      is_offbeat ? new_vel = vel - delta_vel : new_vel = vel + delta_vel;
+
+      new_vel = min(max(new_vel, 0), 127);
+
+      midisend(offset, msg1, pitch + (new_vel << 8));
     );
 
     i += 1;
@@ -93,3 +107,5 @@ arrlen >= 3 ? (
     i += 1;
   );
 );
+
+a = beat_position;
