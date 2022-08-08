@@ -8,21 +8,61 @@ in_pin:none
 out_pin:none
 
 @init
+// this is a memory address location
+// access by mem[0], mem[1], etc
+mem = 0;
 
 @block
+arrlen = 0;
+lowest_pitch = 129;
+next_lowest_pitch = 129;
+highest_pitch = -1;
+
 while (
-  midirecv(ts,msg1,msg23) ? (
+  // for each MIDI event...
+  midirecv(offset, msg1, msg23) ? (
     eventtype=msg1&$xf0;
     velocity=(msg23/256)|0;
     pitch=msg23&127;
 
-    eventtype == 144 /* event type is NOTE ON */ && velocity > 0 ? (
-      velocity = (velocity*slider1)+slider2;
-      velocity|=0;
-
-      velocity > 0 ? midisend(ts,msg1,pitch+velocity*256); // send note on
+    eventtype == 144 ? (
+      // event type is NOTE ON
+      // store to array
+      mem[arrlen * 3] = offset;
+      mem[arrlen * 3 + 1] = msg1;
+      mem[arrlen * 3 + 2] = msg23;
+      arrlen += 1;
+      // record the pitch
+      pitch>highest_pitch ? (
+        highest_pitch = pitch;
+      );
+      pitch<lowest_pitch ? (
+        next_lowest_pitch = lowest_pitch;
+        lowest_pitch = pitch;
+      ) : (
+        pitch<next_lowest_pitch ? (
+          next_lowest_pitch = pitch;
+        );
+      );
     ) : (
-      midisend(ts,msg1,msg23); // passthru
-    );
+      // event type is something else
+      // passthrough
+      midisend(offset, msg1, msg23);
+    )
   );
 );
+
+// loop for arrlen times
+i = 0;
+loop (arrlen,
+  // retrieve midi event from memory
+  offset = mem[i * 3];
+  msg1 = mem[i * 3 + 1];
+  msg23 = mem[i * 3 + 2];
+
+  midisend(offset, msg1, msg23);
+
+  i += 1;
+);
+
+
