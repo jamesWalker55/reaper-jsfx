@@ -14,55 +14,129 @@ mem = 0;
 
 @block
 arrlen = 0;
+noteon_count = 0;
 lowest_pitch = 129;
 next_lowest_pitch = 129;
 highest_pitch = -1;
 
+// NOTE: The order you send MIDI events matter!
+// You should send events the exact order you received them
 while (
   // for each MIDI event...
   midirecv(offset, msg1, msg23) ? (
-    eventtype=msg1&$xf0;
-    velocity=(msg23/256)|0;
-    pitch=msg23&127;
+    // store to array
+    mem[arrlen * 3] = offset;
+    mem[arrlen * 3 + 1] = msg1;
+    mem[arrlen * 3 + 2] = msg23;
+    arrlen += 1;
 
-    eventtype == 144 ? (
-      // event type is NOTE ON
-      // store to array
-      mem[arrlen * 3] = offset;
-      mem[arrlen * 3 + 1] = msg1;
-      mem[arrlen * 3 + 2] = msg23;
-      arrlen += 1;
+    eventtype = msg1 >> 4;
+    velocity = (msg23/256)|0;
+    pitch = msg23&127;
+
+    // if event type is NOTE ON
+    eventtype == 9 ? (
+      noteon_count += 1;
+
       // record the pitch
-      pitch>highest_pitch ? (
+      pitch>=highest_pitch ? (
         highest_pitch = pitch;
       );
-      pitch<lowest_pitch ? (
+      pitch<=lowest_pitch ? (
         next_lowest_pitch = lowest_pitch;
         lowest_pitch = pitch;
       ) : (
-        pitch<next_lowest_pitch ? (
+        pitch<=next_lowest_pitch ? (
           next_lowest_pitch = pitch;
         );
       );
-    ) : (
-      // event type is something else
-      // passthrough
-      midisend(offset, msg1, msg23);
-    )
+    );
   );
 );
 
-// loop for arrlen times
 i = 0;
-loop (arrlen,
-  // retrieve midi event from memory
-  offset = mem[i * 3];
-  msg1 = mem[i * 3 + 1];
-  msg23 = mem[i * 3 + 2];
 
-  midisend(offset, msg1, msg23);
+noteon_count >= 3 ? (
+  // there are at least 3 notes pressed
+  mid_pitch = (next_lowest_pitch + highest_pitch) / 2;
+  loop (arrlen,
+    // retrieve midi event from memory
+    offset = mem[i * 3];
+    msg1 = mem[i * 3 + 1];
+    msg23 = mem[i * 3 + 2];
 
-  i += 1;
+    // if event type is NOTE ON
+    eventtype == 9 ? (
+      // extract information
+      velocity = msg23 >> 8;
+      pitch = msg23 & 127;
+
+      pitch==lowest_pitch ? (
+        midisend(offset, msg1, msg23);
+        // midisend(offset, msg1, (msg23 & 255) + (20 << 8));
+      ) : (
+        new_velocity = floor(velocity + (pitch - mid_pitch) * 8);
+        new_velocity = min(max(new_velocity, 0), 127);
+
+        // midisend(offset, msg1, pitch + (new_velocity << 8));
+        midisend(offset, msg1, pitch + (10 << 8));
+
+        // midisend(offset, msg1, msg23 & 255 + (msg23 >> 8) << 8);
+        // midisend(offset, msg1, pitch + (20 << 8));
+      );
+    ) : (
+      // otherwise, passthrough
+      midisend(offset, msg1, msg23);
+    );
+
+    i += 1;
+  );
+) : (
+  // less than 3 notes pressed, just pass through
+  loop (arrlen,
+    // retrieve midi event from memory
+    offset = mem[i * 3];
+    msg1 = mem[i * 3 + 1];
+    msg23 = mem[i * 3 + 2];
+
+    midisend(offset, msg1, msg23);
+
+    i += 1;
+  );
 );
 
+// // loop for arrlen times
+// i = 0;
+// loop (arrlen,
+//   // retrieve midi event from memory
+//   offset = mem[i * 3];
+//   msg1 = mem[i * 3 + 1];
+//   msg23 = mem[i * 3 + 2];
 
+//   // // only do the thing if there are at least 3 notes
+//   // arrlen>=3 ? (
+//   //   // extract information
+//   //   velocity = msg23 >> 8;
+//   //   pitch = msg23 & 127;
+
+//   //   pitch==lowest_pitch ? (
+//   //     // midisend(offset, msg1, msg23);
+//   //     midisend(offset, msg1, (msg23 & 255) + (20 << 8));
+//   //   ) : (
+//   //     // new_velocity = velocity + (pitch - mid_pitch) * 4;
+//   //     // new_velocity>127 ? new_velocity = 127 : new_velocity<0 ? new_velocity = 0;
+
+//   //     // midisend(offset, msg1, msg23 & 255 + new_velocity << 8);
+//   //     // midisend(offset, msg1, msg23 & 255 + (msg23 >> 8) << 8);
+//   //     midisend(offset, msg1, pitch + (20 << 8));
+//   //   );
+//   // ) : (
+//   //   // otherwise, just passthrough
+//   //   midisend(offset, msg1, msg23);
+//   //   // midisend(offset, msg1, (msg23 & 255) + (20 << 8));
+//   // );
+
+//   midisend(offset, msg1, (msg23 & 127) + (127 * 256));
+
+//   i += 1;
+// );
