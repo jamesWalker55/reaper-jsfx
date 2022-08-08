@@ -5,6 +5,7 @@ slider1:80<0,127,1>Velocity range
 slider2:0.5<0.5,2,0.5>Cycle duration (beats)
 slider3:0.1<0,1,0.05>Offbeat detection tolerance
 slider4:1<0,1,1>Constant root note
+slider5:1<0,127,1>Randomize velocity
 
 in_pin:none
 out_pin:none
@@ -93,8 +94,10 @@ arrlen >= 3 ? (
       is_offbeat = beat_offset>=(slider2*(1-slider3)) && beat_offset<(slider2*(2-slider3));
 
       delta_vel = (pitch - mid_pitch) / pitch_range * slider1;
+      rand_vel = rand(slider5) - slider5/2;
 
       is_offbeat ? new_vel = vel - delta_vel : new_vel = vel + delta_vel;
+      new_vel += rand_vel;
 
       new_vel = min(max(new_vel, 0), 127);
 
