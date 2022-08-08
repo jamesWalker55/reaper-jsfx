@@ -107,5 +107,3 @@ arrlen >= 3 ? (
     i += 1;
   );
 );
-
-a = beat_position;
