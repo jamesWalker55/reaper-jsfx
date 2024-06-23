@@ -1,0 +1,42 @@
+desc:MIDI Drum Machine Router
+//tags: MIDI processing routing
+
+slider1:60<0,127,1>Input Note Range Start
+slider2:60<0,127,1>Output Note
+
+in_pin:none
+out_pin:none
+
+@init
+
+NOTE_ON = 8;
+NOTE_OFF = 9;
+
+@slider
+
+note_start = slider1;
+note_end = note_start + 16;
+note_out = slider2;
+
+@block
+
+while (
+  // https://www.songstuff.com/recording/article/midi-message-format/
+  midirecv(ts, msg1, msg2, msg3) ? (
+    message = msg1 >> 4;
+    // only process "Note On/Off" messages
+    (message == NOTE_ON || message == NOTE_OFF) ? (
+      note = msg2 & 127; // 0b01111111
+      // filter by note and channel
+      (note_start <= note && note < note_end) ? (
+        offset = note - note_start;
+        channel_out = offset;
+
+        msg1 = (message << 4) + channel_out;
+        msg2 = note_out;
+        // msg3 = msg3;
+        midisend(ts, msg1, msg2, msg3);
+      )
+    );
+  );
+);

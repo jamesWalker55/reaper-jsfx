@@ -1,0 +1,45 @@
+// This is an edit of "MIDI Route Note To Channel"
+
+desc:MIDI Reemit Note To Channel
+//tags: MIDI processing routing
+
+slider1:60<0,127,1>Input Note
+slider2:0<0,15,1{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16>Input Channel
+slider3:60<0,127,1>Output Note
+slider4:0<0,15,1{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16>Output Channel
+
+in_pin:none
+out_pin:none
+
+@init
+
+NOTE_ON = 8;
+NOTE_OFF = 9;
+
+@slider
+
+note_in = slider1;
+channel_in = slider2;
+note_out = slider3;
+channel_out = slider4;
+
+@block
+
+while (
+  // https://www.songstuff.com/recording/article/midi-message-format/
+  midirecv(ts, msg1, msg2, msg3) ? (
+    message = msg1 >> 4;
+    // only process "Note On/Off" messages
+    (message == NOTE_ON || message == NOTE_OFF) ? (
+      channel = msg1 & 15; // 0b00001111
+      note = msg2 & 127;   // 0b01111111
+      // filter by note and channel
+      (note == note_in && channel == channel_in) ? (
+        msg1 = (message << 4) + channel_out;
+        msg2 = note_out;
+        // msg3 = msg3;
+      )
+    );
+    midisend(ts, msg1, msg2, msg3);
+  );
+);
