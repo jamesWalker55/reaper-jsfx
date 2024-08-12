@@ -1,0 +1,55 @@
+// This is an edit of "MIDI Route Note To Channel"
+
+desc:MIDI Filter Notes By Velocity
+//tags: MIDI processing filter
+
+slider1:2<2,127,1>Min Velocity
+
+in_pin:none
+out_pin:none
+
+@init
+
+NOTE_OFF = 8;
+NOTE_ON = 9;
+FILTERED_NOTES = 1024;  // array for storing which notes are filtered
+
+@slider
+
+min_velocity = slider1;
+
+@block
+
+while (
+  // https://www.songstuff.com/recording/article/midi-message-format/
+  midirecv(ts, msg1, msg2, msg3) ? (
+    message = msg1 >> 4;
+    // only process "Note On" messages
+    (message == NOTE_ON) ? (
+      // for note-on events...
+      note = msg2 & 127;   // 0b01111111
+      vel = msg3 & 127; // 0b01111111
+      // filter by velocity
+      (vel < min_velocity) ? (
+        // mark note as filtered, so we can filter the next note-off event as well
+        FILTERED_NOTES[note] = 1;
+      ) : (
+        // only send note if velocity is above threshold
+        midisend(ts, msg1, msg2, msg3);
+      );
+    ) : (message == NOTE_OFF) ? (
+      // for note-off events...
+      note = msg2 & 127;   // 0b01111111
+      vel = msg3 & 127; // 0b01111111
+      FILTERED_NOTES[note] ? (
+        // ignore this note-off event since we already filtered it
+        FILTERED_NOTES[note] = 0;
+      ) : (
+        midisend(ts, msg1, msg2, msg3);
+      );
+    ) : (
+      // everything else, send events as-is
+      midisend(ts, msg1, msg2, msg3);
+    );
+  );
+);
