@@ -1,0 +1,11 @@
+desc:No-op Macro Controller
+//tags: controls noop macro
+
+slider1:0<0,1,0.0>Macro 1
+slider2:0<0,1,0.0>Macro 2
+slider3:0<0,1,0.0>Macro 3
+slider4:0<0,1,0.0>Macro 4
+slider5:0<0,1,0.0>Macro 5
+slider6:0<0,1,0.0>Macro 6
+slider7:0<0,1,0.0>Macro 7
+slider8:0<0,1,0.0>Macro 8
